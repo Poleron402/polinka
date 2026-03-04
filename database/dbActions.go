@@ -12,6 +12,11 @@ type Deck struct {
 	ID int64
 	Name string
 }
+type Flashcard struct {
+	Question string
+	Answer string
+	Hint string
+}
 func CreateDBIfNotExist() {
 	db, err := sql.Open("sqlite3", "./polinkadb")
 	if err != nil {
@@ -24,7 +29,10 @@ func CreateDBIfNotExist() {
 	sqlStatement1 := `create table if not exists polinka_flashcard (id integer not null primary key autoincrement,
 	question text,
 	answer text,
-	hint text);`
+	hint text,
+	deck_id integer,
+	foreign key(deck_id) references polinka_deck(id)
+	);`
 
 	// Execute and check the first statement
 	_, err = db.Exec(sqlStatement)
@@ -83,10 +91,24 @@ func DeleteDeck(name string) error {
 	}
 	return nil
 }
-// func GetDeck(name string) (Deck, error) {
-// 	db, err := sql.Open("sqlite3", "./polinkadb")
-// 	if err != nil {
-// 		log.Fatal(err)}
-// 	defer db.Close()
-// 	rows, err := db.Query(`select id, name from polinka_deck`)
-// }
+func GetFlashCards(deckId int) ([]Flashcard, error){
+	var flashcards []Flashcard
+	db, err := sql.Open("sqlite3", "./polinkadb")
+	if err != nil {
+		log.Fatal(err)}
+	defer db.Close()
+	rows, err := db.Query(`select * from polinka_flashcard where deck_id=(?)`, deckId)
+	if err != nil {
+		return flashcards, err
+	}
+
+	for rows.Next(){
+		var fCard Flashcard
+		if err:=rows.Scan(&fCard.Question, &fCard.Answer, &fCard.Hint); err != nil {
+			log.Fatal("There was an error parsing flashcards to an object.")
+		}
+		flashcards = append(flashcards, fCard)
+	}
+
+	return flashcards, nil
+}

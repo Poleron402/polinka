@@ -117,5 +117,25 @@ func deleteDeck() {
 }
 
 func selectDeck() {
+	decks, err := listDecks()
+	if err != nil {
+		manageError("There was an issue listing decks", err.Error())
+		return
+	}
+	options := make([]huh.Option[string], 0, len(decks))
+
+	for _, deck := range decks {
+		options = append(options, huh.NewOption(deck.Name, deck.Name))
+	}
+	var practiceDeck string
+	form := huh.NewForm(huh.NewGroup(
+		huh.NewSelect[string]().Title("Select a Deck to practice").Options(
+			options...
+		).Value(&practiceDeck),
+	))
+	err = form.Run()
+	if err!=nil{
+		manageError("There has been an issue with the Deck selection form", err.Error())
+	}
 	
 }
