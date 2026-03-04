@@ -91,13 +91,13 @@ func DeleteDeck(name string) error {
 	}
 	return nil
 }
-func GetFlashCards(deckId int) ([]Flashcard, error){
+func GetFlashCards(deckId string) ([]Flashcard, error){
 	var flashcards []Flashcard
 	db, err := sql.Open("sqlite3", "./polinkadb")
 	if err != nil {
 		log.Fatal(err)}
 	defer db.Close()
-	rows, err := db.Query(`select * from polinka_flashcard where deck_id=(?)`, deckId)
+	rows, err := db.Query(`select question, answer, hint from polinka_flashcard where deck_id=(?)`, deckId)
 	if err != nil {
 		return flashcards, err
 	}
@@ -111,4 +111,17 @@ func GetFlashCards(deckId int) ([]Flashcard, error){
 	}
 
 	return flashcards, nil
+}
+
+func AddFlashcardsToDeck(question string, answer string, hint string, deckId string) error {
+	db, err := sql.Open("sqlite3", "./polinkadb")
+	if err != nil {
+		log.Fatal(err)}
+	defer db.Close()
+	_, err = db.Exec(`insert into polinka_flashcard (question, answer, hint, deck_id) values (?, ?, ?, ?);`, question, answer, hint, deckId) 
+	if err != nil {
+		fmt.Printf("%v", err)
+		return err
+	}
+	return nil
 }

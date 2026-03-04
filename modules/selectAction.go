@@ -22,7 +22,7 @@ func manageError(specialMessage string, errorString string) {
 func SelectAction() {
 	const (
 		deck_create string = "deck_create"
-		flashcard_practice string = "flashcard_practice"
+		flashcard_add string = "flashcard_add"
 		delete_deck string = "delete_deck"
 		deck_practice string = "deck_practice" 
 		deck_list string = "deck_list"
@@ -33,7 +33,7 @@ func SelectAction() {
 		form := huh.NewForm(huh.NewGroup(
 			huh.NewSelect[string]().Title("Where would you like to start? (Hold 'Ctrl+C' to quit)").Options(
 				huh.NewOption("Create a new Deck", deck_create),
-				huh.NewOption("Add a new flashcard to a Deck", flashcard_practice),
+				huh.NewOption("Add a new flashcard to a Deck", flashcard_add),
 				huh.NewOption("Delete a Deck", delete_deck),
 				huh.NewOption("Practice Deck", deck_practice),
 				huh.NewOption("See All Decks", deck_list),
@@ -83,6 +83,10 @@ func SelectAction() {
 
 		} else if option == delete_deck {
 			deleteDeck()
+		} else if option == deck_practice {
+			selectDeck()
+		}else if option == flashcard_add {
+			addFlashcardsToDeck()
 		}
 	}
 }
@@ -116,26 +120,87 @@ func deleteDeck() {
 	}
 }
 
-func selectDeck() {
+func listDecksForm(message string, selectionType string) (string, error) {
 	decks, err := listDecks()
 	if err != nil {
 		manageError("There was an issue listing decks", err.Error())
-		return
+		return "", err
+	}
+	if len(decks) == 0 {
+		fmt.Println("There are no Decks yet. Create a new deck in the main menu.")
+		return "", err
 	}
 	options := make([]huh.Option[string], 0, len(decks))
 
 	for _, deck := range decks {
-		options = append(options, huh.NewOption(deck.Name, deck.Name))
+		if selectionType == "DeckName" {
+			options = append(options, huh.NewOption(deck.Name, deck.Name))
+		}else {
+			options = append(options, huh.NewOption(deck.Name, fmt.Sprintf("%v",deck.ID)))
+		}
 	}
 	var practiceDeck string
 	form := huh.NewForm(huh.NewGroup(
-		huh.NewSelect[string]().Title("Select a Deck to practice").Options(
+		huh.NewSelect[string]().Title(message).Options(
 			options...
 		).Value(&practiceDeck),
-	))
+	)).WithTheme(huh.ThemeCatppuccin())
 	err = form.Run()
 	if err!=nil{
 		manageError("There has been an issue with the Deck selection form", err.Error())
+		return "", err
+	}
+	return practiceDeck, nil
+}
+
+func selectDeck() {
+	practiceDeck, err := listDecksForm("Select a Deck to practice", "DeckID")
+
+	if err != nil {
+		return
+	}
+	var flashcards []polinkadatabase.Flashcard
+	flashcards, err = polinkadatabase.GetFlashCards(practiceDeck)
+	if err != nil {
+		manageError("There has been an issue fetching Flashcards from Deck", err.Error())
+		return 
+	}
+	if len(flashcards) == 0 {
+		manageError("There are no flashcards in this deck yet. Populate them in the main menu", "")
+		return
+	}
+
+
+}
+
+func addFlashcardsToDeck() {
+	deckToAdd, err := listDecksForm("Select a Deck to practice", "DeckID")
+	if err != nil {
+		manageError("There has been an issue fetching decks.", err.Error())
+		return
+	}
+	var (
+		question string 
+		answer string 
+		hint string
+	)
+	huh.NewInput().
+    Title("Front side (Question)").
+    Value(&question).
+    Run()
+	huh.NewInput().
+    Title("Back side (Answer)").
+    Value(&answer).
+    Run()
+	huh.NewInput().
+    Title("Hint.").
+    Value(&hint).
+    Run()
+
+	err = polinkadatabase.AddFlashcardsToDeck(question, answer, hint, deckToAdd)
+	if err != nil {
+		manageError("There has been an issue adding cards to the deck.", err.Error())
+		return
 	}
 	
 }
