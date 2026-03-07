@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"unicode/utf8"
 	"github.com/Poleron402/Polinka/database"
 	"github.com/charmbracelet/huh"
 )
@@ -84,7 +85,7 @@ func SelectAction() {
 		} else if option == delete_deck {
 			deleteDeck()
 		} else if option == deck_practice {
-			selectDeck()
+			practiceDeckCards()
 		}else if option == flashcard_add {
 			addFlashcardsToDeck()
 		}
@@ -153,10 +154,10 @@ func listDecksForm(message string, selectionType string) (string, error) {
 	return practiceDeck, nil
 }
 
-func selectDeck() {
+func practiceDeckCards() {
 	practiceDeck, err := listDecksForm("Select a Deck to practice", "DeckID")
-
 	if err != nil {
+		manageError("There has been an issue selecting the Deck", err.Error())
 		return
 	}
 	var flashcards []polinkadatabase.Flashcard
@@ -169,10 +170,75 @@ func selectDeck() {
 		manageError("There are no flashcards in this deck yet. Populate them in the main menu", "")
 		return
 	}
-
-
+	for {
+		for _, card := range flashcards {
+			if len(card.Question) == 0{
+				continue
+			}
+			splitcard := splitByRunecount(card.Question)
+			constructedCard := showFlashCard(splitcard)
+			fmt.Printf(constructedCard)
+		}
+	}
+	
 }
 
+// https://thevalleyofcode.com/lesson/go-basics/go-tutorial-cowsay/ will copy to build a card
+func showFlashCard(s []string) string {
+	border := "░"
+	max_length := 60
+	bordered_length := 58
+	var card string
+	for i:=0; i<max_length; i++ {
+		card += border
+	}
+	card+="\n░"
+	for i := 0; i<bordered_length; i++{
+		card += " "
+	}
+	card+="░\n"
+
+	for i:=0; i<len(s); i++ {
+		card+="░ "
+		card+=s[i]
+		card+=" ░\n"
+	}
+
+	card+="░"
+	for i := 0; i<bordered_length; i++{
+		card += " "
+	}
+	card+="░\n"
+	for i:=0; i<max_length; i++ {
+		card += border
+	}
+	card+="\n"
+	return card
+}
+
+func splitByRunecount(s string) []string{
+	var chunks []string
+	runes := 56
+	if len(s)<runes {
+		for len(s)<runes{
+			s = " "+s
+			if len(s) == runes {
+				break
+			}
+			s += " "
+		}
+	}
+	for len(s)>0{
+		j := 0
+		for i := 0; i<runes && j<len(s); i++ {
+			_, size := utf8.DecodeRuneInString((s[j:]))
+			j+=size
+		}
+		chunks = append(chunks, s[:j])
+		s = s[j:]
+	}
+	return chunks
+}
 func addFlashcardsToDeck() {
 	deckToAdd, err := listDecksForm("Select a Deck to practice", "DeckID")
 	if err != nil {
@@ -184,6 +250,7 @@ func addFlashcardsToDeck() {
 		answer string 
 		hint string
 	)
+	fmt.Println("Click Ctrl+C to cancel")
 	huh.NewInput().
     Title("Front side (Question)").
     Value(&question).
@@ -197,10 +264,11 @@ func addFlashcardsToDeck() {
     Value(&hint).
     Run()
 
-	err = polinkadatabase.AddFlashcardsToDeck(question, answer, hint, deckToAdd)
-	if err != nil {
-		manageError("There has been an issue adding cards to the deck.", err.Error())
-		return
+	if len(question)>0 && len(answer)>0{
+		err = polinkadatabase.AddFlashcardsToDeck(question, answer, hint, deckToAdd)
+		if err != nil {
+			manageError("There has been an issue adding cards to the deck.", err.Error())
+			return
+		}
 	}
-	
 }
