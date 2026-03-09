@@ -106,7 +106,7 @@ func deleteDeck() {
 	}
 	var deckForDeletion []string
 	form := huh.NewForm(huh.NewGroup(
-		huh.NewMultiSelect[string]().Title("Select Deck(s) to DELETE").Options(
+		huh.NewMultiSelect[string]().Title("Select Deck(s) to DELETE (Press Space bar to select)").Options(
 			options...
 		).Value(&deckForDeletion),
 	))
@@ -190,12 +190,8 @@ func practiceDeckCards() {
 					fmt.Print(constructedCard)
 				}
 				char, key, err := keyboard.GetKey()
-				if 
-				err != nil {
+				if err != nil {
 					panic(err)
-				}
-				if key == keyboard.KeyEsc {
-					break
 				}
 				
 				if len(card.Question) == 0{
@@ -304,10 +300,22 @@ func splitByRunecount(s string) []string{
 		chunks = append(chunks, s[:j])
 		s = s[j:]
 	}
+	lastLine := &chunks[len(chunks)-1]
+	fmt.Printf(*lastLine)
+	if len(*lastLine) < runes {
+		for len(*lastLine) <runes{
+			*lastLine = " "+*lastLine
+			if len(*lastLine) == runes {
+				break
+			}
+			*lastLine += " "
+		}
+	}
+
 	return chunks
 }
 func addFlashcardsToDeck() {
-	deckToAdd, err := listDecksForm("Select a Deck to practice", "DeckID")
+	deckToAdd, err := listDecksForm("Select a Deck to populate with flashcards", "DeckID")
 	if err != nil {
 		manageError("There has been an issue fetching decks.", err.Error())
 		return
