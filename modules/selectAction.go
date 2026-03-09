@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"unicode/utf8"
+	"github.com/eiannone/keyboard"
 	"github.com/Poleron402/Polinka/database"
 	"github.com/charmbracelet/huh"
 )
@@ -170,17 +171,77 @@ func practiceDeckCards() {
 		manageError("There are no flashcards in this deck yet. Populate them in the main menu", "")
 		return
 	}
-	for {
-		for _, card := range flashcards {
-			if len(card.Question) == 0{
-				continue
+	err = keyboard.Open()
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer keyboard.Close()
+	for _, card := range flashcards {
+		stopPractice := false
+		questionShown := false
+		if len(card.Question) > 0 {
+			for {
+				if !questionShown {
+					fmt.Print("\033[H\033[2J")
+					questionShown = true
+					splitcard := splitByRunecount(card.Question)
+					constructedCard := showFlashCard(splitcard)
+					fmt.Print("\n\nPress Enter card for next, → for Answer, ← for back to Question, 'h' for Hint, or 'Esq' to quit: \n\n")
+					fmt.Print(constructedCard)
+				}
+				char, key, err := keyboard.GetKey()
+				if 
+				err != nil {
+					panic(err)
+				}
+				if key == keyboard.KeyEsc {
+					break
+				}
+				
+				if len(card.Question) == 0{
+					continue
+				}
+				shallBreak := false
+				switch key{
+					case keyboard.KeyArrowRight: 
+						splitcard := splitByRunecount(card.Answer)
+						constructedCard := showFlashCard(splitcard)
+						fmt.Print("\033[H\033[2J")
+						fmt.Print("\n\nPress Enter card for next, → for Answer, ← for back to Question, 'h' for Hint, or 'Esq' to quit: \n\n")
+						fmt.Println(constructedCard)
+					case keyboard.KeyArrowLeft: 
+						splitcard := splitByRunecount(card.Question)
+						constructedCard := showFlashCard(splitcard)
+						fmt.Print("\033[H\033[2J")
+						fmt.Print("\n\nPress Enter card for next, → for Answer, ← for back to Question, 'h' for Hint, or 'Esq' to quit: \n\n")
+						fmt.Println(constructedCard)
+					case keyboard.KeyEnter:
+						shallBreak = true
+						break 
+					case keyboard.KeyEsc:
+						stopPractice = true
+						break
+					default:
+						break
+				}
+				if shallBreak || stopPractice {
+					break
+				}
+				if char == 'h' {
+
+					splitcard := splitByRunecount(card.Hint)
+					constructedCard := showFlashCard(splitcard)
+					fmt.Print("\033[H\033[2J")
+					fmt.Print("\n\nPress Enter card for next, → for Answer, ← for back to Question, 'h' for Hint, or 'Esq' to quit: \n\n")
+					fmt.Println(constructedCard)
+				}
 			}
-			splitcard := splitByRunecount(card.Question)
-			constructedCard := showFlashCard(splitcard)
-			fmt.Printf(constructedCard)
+		}
+		if stopPractice {
+			fmt.Print("\n\n... Ending Practice ...\n\n")
+			break
 		}
 	}
-	
 }
 
 // https://thevalleyofcode.com/lesson/go-basics/go-tutorial-cowsay/ will copy to build a card
@@ -188,27 +249,33 @@ func showFlashCard(s []string) string {
 	border := "░"
 	max_length := 60
 	bordered_length := 58
+	padding := 2
 	var card string
 	for i:=0; i<max_length; i++ {
 		card += border
 	}
-	card+="\n░"
-	for i := 0; i<bordered_length; i++{
-		card += " "
+	card+="\n"
+	for range padding {
+		card+="░"
+		for range bordered_length{
+			card += " "
+		}
+		card+="░\n"
 	}
-	card+="░\n"
 
 	for i:=0; i<len(s); i++ {
 		card+="░ "
 		card+=s[i]
 		card+=" ░\n"
 	}
-
-	card+="░"
-	for i := 0; i<bordered_length; i++{
-		card += " "
+	
+	for range padding {
+		card+="░"
+		for range bordered_length{
+			card += " "
+		}
+		card+="░\n"
 	}
-	card+="░\n"
 	for i:=0; i<max_length; i++ {
 		card += border
 	}
