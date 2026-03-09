@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	ui "github.com/Poleron402/Polinka/UI"
 	"github.com/Poleron402/Polinka/database"
 	"github.com/Poleron402/Polinka/modules"
@@ -16,6 +18,6 @@ func main() {
 	
 
 	selector.SelectAction()
-
+	os.Exit(0)
 	fmt.Println("\nProgram stopping.")
 }
