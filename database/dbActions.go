@@ -80,7 +80,6 @@ func ListDecks() ([]Deck, error) {
 	return decks, nil
 }
 func DeleteDeck(name string) error {
-	fmt.Printf("%s", name)
 	db, err := sql.Open("sqlite3", "./polinkadb")
 	if err != nil {
 		log.Fatal(err)}
